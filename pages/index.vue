@@ -33,6 +33,9 @@
         </ul>
       </div>
     </pw-modal>
+    <pw-section v-if="dynamicMode" label="Pre-Request" ref="preRequest">
+      <textarea id="preRequestScript" @keydown="formatRawParams" rows="8" v-model="preRequestScript" v-textarea-auto-height="rawParams" spellcheck="false"></textarea>
+    </pw-section>
     <pw-section class="blue" label="Request" ref="request">
       <ul>
         <li>
@@ -138,6 +141,10 @@
         <button class="icon" id="show-modal" @click="showModal = true">
           <i class="material-icons">import_export</i>
           <span>Import cURL</span>
+        </button>
+        <button :class="'icon' + (dynamicMode ? ' info-response' : '')" id="dynamic-mode" @click="dynamicMode = !dynamicMode">
+          <i class="material-icons" :class="dynamicMode ? ' info-response' : ''">code</i>
+          <span :class="dynamicMode ? ' info-response' : ''">Dynamic Mode</span>
         </button>
         <button class="icon" @click="clearContent">
           <i class="material-icons">clear_all</i>
@@ -357,6 +364,7 @@
   import parseCurlCommand from '../assets/js/curlparser.js';
   import hljs from 'highlight.js';
   import 'highlight.js/styles/dracula.css';
+  import getEnvironmentVariablesFromScript from '../functions/preRequest'
 
   const statusCategories = [{
       name: 'informational',
@@ -420,6 +428,7 @@
     data() {
       return {
         showModal: false,
+        dynamicMode: false,
         copyButton: '<i class="material-icons">file_copy</i>',
         copiedButton: '<i class="material-icons">done</i>',
         method: 'GET',
@@ -434,6 +443,7 @@
         params: [],
         bodyParams: [],
         rawParams: '',
+        preRequestScript: '',
         rawInput: false,
         contentType: 'application/json',
         requestType: 'JavaScript XHR',
