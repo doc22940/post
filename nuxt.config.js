@@ -27,6 +27,9 @@ export default {
   server: {
     host: '0.0.0.0', // default: localhost
   },
+  serverMiddleware: [
+    '~/proxy/index.js'
+  ],
   head: {
     title: `${meta.name} \u2022 ${meta.shortDescription}`,
     meta: [
@@ -188,6 +191,14 @@ export default {
     color: 'var(--ac-color)'
   },
   /*
+   ** Customize the loading indicator
+   */
+  loadingIndicator: {
+    name: 'pulse',
+    color: 'var(--ac-color)',
+    background: 'var(--bg-color)'
+  },
+  /*
    ** Global CSS
    */
   css: [
@@ -201,6 +212,9 @@ export default {
   plugins: [
     {
       src: '~/plugins/vuex-persist'
+    },
+    {
+      src: '~/plugins/v-tooltip'
     }
   ],
   /*
@@ -251,8 +265,9 @@ export default {
   },
   toast: {
     position: 'bottom-center',
-    duration: 2000,
-    theme: 'bubble'
+    duration: 3000,
+    theme: 'bubble',
+    keepOnHover: true
   },
   googleAnalytics: {
     id: process.env.GA_ID || 'UA-61422507-2'

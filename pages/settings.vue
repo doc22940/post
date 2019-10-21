@@ -32,12 +32,6 @@
         </li>
       </ul>
     </pw-section>
-
-    <!--
-		PROXY SETTINGS
-		--------------
-		This feature is currently not finished.
-
 		<pw-section class="blue" label="Proxy">
 			<ul>
 				<li>
@@ -46,7 +40,10 @@
 					</pw-toggle>
 				</li>
 			</ul>
-
+      <!--
+      PROXY SETTINGS URL AND KEY
+      --------------
+		  This feature is currently not finished.
 			<ul>
 				<li>
 					<label for="url">URL</label>
@@ -57,8 +54,9 @@
 					<input id="key" type="password" v-model="settings.PROXY_KEY" :disabled="!settings.PROXY_ENABLED" @change="applySetting('PROXY_KEY', $event)">
 				</li>
 			</ul>
+      -->
 		</pw-section>
-		-->
+
   </div>
 </template>
 <script>
@@ -81,18 +79,18 @@
         themes: [
           {
             "color": "rgb(37, 38, 40)",
-            "name": "Dark",
+            "name": "Kinda Dark",
             "class": ""
           },
           {
             "color": "#ffffff",
-            "name": "Light",
+            "name": "Clearly White",
             "vibrant": true,
             "class": "light"
           },
           {
             "color": "#000000",
-            "name": "Black",
+            "name": "Just Black",
             "class": "black"
           },
           {

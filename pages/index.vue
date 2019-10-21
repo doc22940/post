@@ -75,8 +75,8 @@
         </li>
         <li>
           <label class="hide-on-small-screen" for="send">&nbsp;</label>
-          <button :disabled="!isValidURL" @click="sendRequest" class="show" id="send" ref="sendButton">
-            Send <span id="hidden-message">Again</span>
+          <button :disabled="!isValidURL" @click="sendRequest" id="send" ref="sendButton">
+            Send<span id="hidden-message"> Again</span>
             <span><i class="material-icons">send</i></span>
           </button>
         </li>
@@ -137,6 +137,11 @@
           </ul>
         </div>
       </div>
+      <ul>
+        <li>
+          <input id="label" name="label" type="text" v-model="label" placeholder="Label request">
+        </li>
+      </ul>
       <div class="flex-wrap">
         <button class="icon" id="show-modal" @click="showModal = true">
           <i class="material-icons">import_export</i>
@@ -364,7 +369,6 @@
   import parseCurlCommand from '../assets/js/curlparser.js';
   import hljs from 'highlight.js';
   import 'highlight.js/styles/dracula.css';
-  import getEnvironmentVariablesFromScript from '../functions/preRequest'
 
   const statusCategories = [{
       name: 'informational',
@@ -427,6 +431,7 @@
     },
     data() {
       return {
+        label: '',
         showModal: false,
         dynamicMode: false,
         copyButton: '<i class="material-icons">file_copy</i>',
@@ -495,9 +500,9 @@
             responseText.removeAttribute("class");
             responseText.innerHTML = null;
             responseText.innerText = this.response.body;
-          } else if (responseText && this.response.body != "(waiting to send request)" && this.response.body !=
-            "Loading..." && this.response.body != "See JavaScript console (F12) for details.") {
-            responseText.innerText = this.responseType == 'application/json' || 'application/hal+json' ? JSON.stringify(this.response.body,
+          } else if (responseText && this.response.body !== "(waiting to send request)" && this.response.body !==
+            "Loading..." && this.response.body !== "See JavaScript console (F12) for details.") {
+            responseText.innerText = this.responseType === 'application/json' || this.responseType === 'application/hal+json' ? JSON.stringify(this.response.body,
               null, 2) : this.response.body;
             hljs.highlightBlock(document.querySelector("div#response-details-wrapper pre code"));
           } else {
@@ -533,6 +538,9 @@
       }
     },
     computed: {
+      requestName() {
+        return this.label
+      },
       statusCategory() {
         return findStatusGroup(this.response.status);
       },
@@ -601,7 +609,7 @@
         return (this.response.headers['content-type'] || '').split(';')[0].toLowerCase();
       },
       requestCode() {
-        if (this.requestType == 'JavaScript XHR') {
+        if (this.requestType === 'JavaScript XHR') {
           var requestString = []
           requestString.push('const xhr = new XMLHttpRequest()');
           const user = this.auth === 'Basic' ? this.httpUser : null
@@ -660,7 +668,7 @@
           requestString.push('  error.message\n')
           requestString.push(')}')
           return requestString.join('');
-        } else if (this.requestType == 'cURL') {
+        } else if (this.requestType === 'cURL') {
           var requestString = [];
           requestString.push('curl -X ' + this.method + ' \\\n')
           requestString.push("  '" + this.url + this.path + this.queryString + "' \\\n")
@@ -688,10 +696,12 @@
     },
     methods: {
       handleUseHistory({
+        label,
         method,
         url,
         path
       }) {
+        this.label = label;
         this.method = method;
         this.url = url;
         this.path = path;
@@ -703,7 +713,27 @@
         const environmentVars = getEnvironmentVariablesFromScript(this.preRequestScript);
 
       },
+      async makeRequest(auth, headers, requestBody) {
+        const requestOptions = {
+            method: this.method,
+            url: this.url + this.pathName + this.queryString,
+            auth,
+            headers,
+            data: requestBody ? requestBody.toString() : null
+        };
+
+        const config = this.$store.state.postwoman.settings.PROXY_ENABLED ? {
+            method: 'POST',
+            url: `${window.location.protocol}//${window.location.host}/proxy`,
+            data: requestOptions
+          } : requestOptions;
+
+        const response = await this.$axios(config);
+        return this.$store.state.postwoman.settings.PROXY_ENABLED ? response.data : response;
+      },
       async sendRequest() {
+        this.$toast.clear();
+
         if (!this.isValidURL) {
           this.$toast.error('URL is not formatted properly', {
             icon: 'error'
@@ -770,12 +800,13 @@
         headers = headersObject;
 
         try {
-          const payload = await this.$axios({
-            method: this.method,
-            url: this.url + this.pathName + this.queryString,
-            auth,
-            headers,
-            data: requestBody ? requestBody.toString() : null
+          const startTime = Date.now();
+
+          const payload = await this.makeRequest(auth, headers, requestBody);
+
+          const duration = Date.now() - startTime;
+          this.$toast.info(`Finished in ${duration}ms`, {
+            icon: 'done'
           });
 
           (() => {
@@ -790,6 +821,7 @@
 
             // Addition of an entry to the history component.
             const entry = {
+              label: this.requestName,
               status,
               date,
               time,
@@ -807,6 +839,7 @@
 
             // Addition of an entry to the history component.
             const entry = {
+              label: this.requestName,
               status: this.response.status,
               date: new Date().toLocaleDateString(),
               time: new Date().toLocaleTimeString(),
@@ -816,14 +849,29 @@
             };
             this.$refs.historyComponent.addEntry(entry);
             return;
+          } else {
+            this.response.status = error.message;
+            this.response.body = "See JavaScript console (F12) for details.";
+            this.$toast.error('Something went wrong!', {
+              icon: 'error'
+            });
+            if(!this.$store.state.postwoman.settings.PROXY_ENABLED) {
+              this.$toast.info('Enable proxy mode?', {
+                action: {
+                  text: 'Settings',
+                  onClick: (e, toastObject) => {
+                    this.$router.push({ path: '/settings' });
+                  }
+                }
+              });
+            }
           }
-
-          this.response.status = error.message;
-          this.response.body = "See JavaScript console (F12) for details.";
-          this.$toast.error('Something went wrong!', {
-            icon: 'error'
-          });
         }
+      },
+      gotoHistory() {
+        this.$refs.historyComponent.$el.scrollIntoView({
+          behavior: 'smooth'
+        });
       },
       getQueryStringFromPath() {
         let queryString,
@@ -1004,7 +1052,10 @@
         const sendButtonElement = this.$refs.sendButton;
         const observer = new IntersectionObserver((entries, observer) => {
           entries.forEach(entry => {
-            sendButtonElement.classList.toggle('show');
+            if(entry.isIntersecting) sendButtonElement.classList.remove('show');
+            // The button should float when it is no longer visible on screen.
+            // This is done by adding the show class to the button.
+            else sendButtonElement.classList.add('show');
           });
         }, {
           rootMargin: '0px',
@@ -1060,6 +1111,7 @@
             this.params = [];
             break;
           default:
+            this.label = '',
             this.method= 'GET',
             this.url = 'https://reqres.in',
             this.auth = 'None',
@@ -1083,6 +1135,7 @@
     created() {
       if (Object.keys(this.$route.query).length) this.setRouteQueries(this.$route.query);
       this.$watch(vm => [
+        vm.label,
         vm.method,
         vm.url,
         vm.auth,
