@@ -1,5 +1,10 @@
 <template>
   <div class="page">
+    <save-request
+      v-bind:show="showRequestModal"
+      v-on:hide-model='hideRequestModal'
+      v-bind:editing-request='editRequest'
+    ></save-request>
     <pw-modal v-if="showModal" @close="showModal = false">
       <div slot="header">
         <ul>
@@ -74,6 +79,13 @@
           </button>
         </li>
         <li>
+          <label class="hide-on-small-screen" for="saveRequest">&nbsp;</label>
+          <button class="icon" @click="saveRequest" id="saveRequest" ref="saveRequest" :disabled="!isValidURL">
+            <i class="material-icons">save</i>
+            <span>Save</span>
+          </button>
+        </li>
+        <li>
           <label class="hide-on-small-screen" for="send">&nbsp;</label>
           <button :disabled="!isValidURL" @click="sendRequest" id="send" ref="sendButton">
             Send<span id="hidden-message"> Again</span>
@@ -91,7 +103,7 @@
         <ul>
           <li>
             <span>
-              <pw-toggle :on="rawInput" @change="rawInput = !rawInput">
+              <pw-toggle :on="rawInput" @change="rawInput = $event">
                 Raw Input {{ rawInput ? "Enabled" : "Disabled" }}
               </pw-toggle>
             </span>
@@ -157,7 +169,7 @@
         </button>
       </div>
     </pw-section>
-    <pw-section class="yellow" label="Code" ref="requestCode" v-if="!isHidden">
+    <pw-section class="yellow" icon="code" label="Code" ref="requestCode" v-if="!isHidden">
       <ul>
         <li>
           <label for="requestType">Request Type</label>
@@ -183,7 +195,7 @@
         </li>
       </ul>
     </pw-section>
-    <pw-section class="purple" id="response" label="Response" ref="response">
+    <pw-section class="purple" icon="cloud_download" id="response" label="Response" ref="response">
       <ul>
         <li>
           <label for="status">status</label>
@@ -225,7 +237,7 @@
       <input id="tab-one" type="radio" name="grp" checked="checked">
       <label for="tab-one">Authentication</label>
       <div class="tab">
-        <pw-section class="cyan" label="Authentication">
+        <pw-section class="cyan" icon="vpn_key" label="Authentication">
           <ul>
             <li>
               <div class="flex-wrap">
@@ -270,7 +282,7 @@
       <input id="tab-two" type="radio" name="grp">
       <label for="tab-two">Headers</label>
       <div class="tab">
-        <pw-section class="orange" label="Headers">
+        <pw-section class="orange" icon="toc" label="Headers">
           <ul>
             <li>
               <div class="flex-wrap">
@@ -313,7 +325,7 @@
       <input id="tab-three" type="radio" name="grp">
       <label for="tab-three">Parameters</label>
       <div class="tab">
-        <pw-section class="pink" label="Parameters">
+        <pw-section class="pink" icon="input" label="Parameters">
           <ul>
             <li>
               <div class="flex-wrap">
@@ -355,6 +367,9 @@
       </div>
     </section>
     <history @useHistory="handleUseHistory" ref="historyComponent"></history>
+    <pw-section class="blue" icon="folder_special" label="Collections" ref="Collections">
+      <collections></collections>
+    </pw-section>
   </div>
 </template>
 <script>
@@ -366,6 +381,8 @@
   import textareaAutoHeight from "../directives/textareaAutoHeight";
   import toggle from "../components/toggle";
   import modal from "../components/modal";
+  import collections from '../components/collections';
+  import saveRequest from '../components/collections/saveRequest';
   import parseCurlCommand from '../assets/js/curlparser.js';
   import hljs from 'highlight.js';
   import 'highlight.js/styles/dracula.css';
@@ -428,6 +445,8 @@
       'pw-modal': modal,
       history,
       autocomplete,
+      collections,
+      saveRequest,
     },
     data() {
       return {
@@ -480,7 +499,9 @@
           'application/x-www-form-urlencoded',
           'text/html',
           'text/plain'
-        ]
+        ],
+        showRequestModal: false,
+        editRequest: {},
       }
     },
     watch: {
@@ -535,9 +556,38 @@
           this.path = path;
         },
         deep: true
+      },
+      selectedRequest (newValue, oldValue) {
+        // @TODO: Convert all variables to single request variable
+        if (!newValue) return;
+        this.url = newValue.url;
+        this.path = newValue.path;
+        this.method = newValue.method;
+        this.auth = newValue.auth;
+        this.httpUser = newValue.httpUser;
+        this.httpPassword = newValue.httpPassword;
+        this.passwordFieldType = newValue.passwordFieldType;
+        this.bearerToken = newValue.bearerToken;
+        this.headers = newValue.headers;
+        this.params = newValue.params;
+        this.bodyParams = newValue.bodyParams;
+        this.rawParams = newValue.rawParams;
+        this.rawInput = newValue.rawInput;
+        this.contentType = newValue.contentType;
+        this.requestType = newValue.requestType;
+      },
+      editingRequest (newValue) {
+        this.editRequest = newValue;
+        this.showRequestModal = true;
       }
     },
     computed: {
+      selectedRequest() {
+        return this.$store.state.postwoman.selectedRequest;
+      },
+      editingRequest() {
+        return this.$store.state.postwoman.editingRequest;
+      },
       requestName() {
         return this.label
       },
@@ -856,7 +906,9 @@
               icon: 'error'
             });
             if(!this.$store.state.postwoman.settings.PROXY_ENABLED) {
-              this.$toast.info('Enable proxy mode?', {
+              this.$toast.info('Try enabling Proxy', {
+                icon: 'help',
+                duration: 5000,
                 action: {
                   text: 'Settings',
                   onClick: (e, toastObject) => {
@@ -1127,7 +1179,36 @@
         this.$toast.info('Cleared', {
           icon: 'clear_all'
         });
-      }
+      },
+      saveRequest() {
+        this.editRequest = {
+          url: this.url,
+          path: this.path,
+          method: this.method,
+          auth: this.auth,
+          httpUser: this.httpUser,
+          httpPassword: this.httpPassword,
+          passwordFieldType: this.passwordFieldType,
+          bearerToken: this.bearerToken,
+          headers: this.headers,
+          params: this.params,
+          bodyParams: this.bodyParams,
+          rawParams: this.rawParams,
+          rawInput: this.rawInput,
+          contentType: this.contentType,
+          requestType: this.requestType,
+        };
+
+        if (this.selectedRequest.url) {
+          this.editRequest = Object.assign({}, this.selectedRequest, this.editRequest);
+        }
+
+        this.showRequestModal = true;
+      },
+      hideRequestModal() {
+        this.showRequestModal = false;
+        this.editRequest = {};
+      },
     },
     mounted() {
       this.observeRequestButton();
