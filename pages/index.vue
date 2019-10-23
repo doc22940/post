@@ -386,6 +386,7 @@
   import parseCurlCommand from '../assets/js/curlparser.js';
   import hljs from 'highlight.js';
   import 'highlight.js/styles/dracula.css';
+  import getEnvironmentVariablesFromScript from '../functions/preRequest'
 
   const statusCategories = [{
       name: 'informational',
@@ -760,10 +761,15 @@
         });
       },
       formatDynamicData() {
+        if (!this.dynamicMode) {
+          return;
+        }
         const environmentVars = getEnvironmentVariablesFromScript(this.preRequestScript);
-
+        console.log(`vars are ${environmentVars}`)
       },
       async makeRequest(auth, headers, requestBody) {
+        debugger
+        this.formatDynamicData()
         const requestOptions = {
             method: this.method,
             url: this.url + this.pathName + this.queryString,
@@ -918,6 +924,7 @@
               });
             }
           }
+          console.error(error)
         }
       },
       gotoHistory() {
