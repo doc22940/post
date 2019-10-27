@@ -993,7 +993,7 @@ export default {
         }
         return getEnvironmentVariablesFromScript(this.preRequestScript);
       },
-      async makeRequest(auth, headers, requestBody) {
+      async makeRequest(auth, headers, requestBody, preRequestScript) {
       const requestOptions = {
         method: this.method,
         url: this.url + this.pathName + this.queryString,
@@ -1001,12 +1001,12 @@ export default {
         headers,
         data: requestBody ? requestBody.toString() : null
       };
-      debugger
-      if (this.showPreRequestScript && this.preRequestScript) {
-        const environmentVariables = getEnvironmentVariablesFromScript(this.preRequestScript);
+      if (preRequestScript) {
+        const environmentVariables = getEnvironmentVariablesFromScript(preRequestScript);
         requestOptions.url = parseTemplateString(requestOptions.url, environmentVariables);
-        if (typeof requestOptions.requestBody === 'string') {
-          requestOptions.data
+        // TODO parse all headers
+        if (typeof requestOptions.data === 'string') {
+          requestOptions.data = parseTemplateString(requestOptions.data);
         }
       }
       const config = this.$store.state.postwoman.settings.PROXY_ENABLED
@@ -1097,7 +1097,7 @@ export default {
       try {
         const startTime = Date.now();
 
-        const payload = await this.makeRequest(auth, headers, requestBody);
+        const payload = await this.makeRequest(auth, headers, requestBody, this.preRequestScript);
 
         const duration = Date.now() - startTime;
         this.$toast.info(`Finished in ${duration}ms`, {
@@ -1122,7 +1122,8 @@ export default {
             time,
             method: this.method,
             url: this.url,
-            path: this.path
+            path: this.path,
+            usesScripts: Boolean(this.preRequestScript)
           };
           this.$refs.historyComponent.addEntry(entry);
         })();

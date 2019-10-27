@@ -50,6 +50,11 @@
       :remain="Math.min(5, filteredHistory.length)"
     >
       <ul v-for="(entry, index) in filteredHistory" :key="index" class="entry">
+        <li v-if="entry.usesScripts"> <button
+          v-tooltip="'This entry used pre-request scripts.'"
+          class="icon"
+          aria-label="Edit"
+        ><i class="material-icons" style="z-index: 10050; float: left">code</i></button></li>
         <li>
           <input
             aria-label="Label"
