@@ -6,10 +6,6 @@
       v-bind:editing-request="editRequest"
     ></save-request-as>
     <pw-modal v-if="showModal" @close="showModal = false">
-<!--      <button :class="'icon' + (prerequest ? ' info-response' : '')" id="dynamic-mode" @click="prerequest = !prerequest">-->
-<!--        <i class="material-icons" :class="prerequest ? ' info-response' : ''">code</i>-->
-<!--        <span :class="prerequest ? ' info-response' : ''">Dynamic Mode</span>-->
-<!--      </button>-->
       <div slot="header">
         <ul>
           <li>
@@ -50,7 +46,7 @@
       <ul>
         <li>
           <label for="method">Method</label>
-          <select id="method" v-model="method">
+          <select id="method" v-model="method" @change="methodChange">
             <option>GET</option>
             <option>HEAD</option>
             <option>POST</option>
@@ -140,7 +136,8 @@
               <input
                 :placeholder="'key '+(index+1)"
                 :name="'bparam'+index"
-                v-model="param.key"
+                :value="param.key"
+                @change="$store.commit('setKeyBodyParams', { index, value: $event.target.value })"
                 @keyup.prevent="setRouteQueryState"
                 autofocus
               />
@@ -150,7 +147,8 @@
                 :placeholder="'value '+(index+1)"
                 :id="'bvalue'+index"
                 :name="'bvalue'+index"
-                v-model="param.value"
+                :value="param.value"
+                @change="$store.commit('setValueBodyParams', { index, value: $event.target.value })"
                 @keyup.prevent="setRouteQueryState"
               />
             </li>
@@ -374,7 +372,8 @@
               <input
                 :placeholder="'header '+(index+1)"
                 :name="'header'+index"
-                v-model="header.key"
+                :value="header.key"
+                @change="$store.commit('setKeyHeader', { index, value: $event.target.value })"
                 @keyup.prevent="setRouteQueryState"
                 autofocus
               />
@@ -383,7 +382,8 @@
               <input
                 :placeholder="'value '+(index+1)"
                 :name="'value'+index"
-                v-model="header.value"
+                :value="header.value"
+                @change="$store.commit('setValueHeader', { index, value: $event.target.value })"
                 @keyup.prevent="setRouteQueryState"
               />
             </li>
@@ -435,12 +435,18 @@
               <input
                 :placeholder="'parameter '+(index+1)"
                 :name="'param'+index"
-                v-model="param.key"
+                :value="param.key"
+                @change="$store.commit('setKeyParams', { index, value: $event.target.value })"
                 autofocus
               />
             </li>
             <li>
-              <input :placeholder="'value '+(index+1)" :name="'value'+index" v-model="param.value" />
+              <input
+                :placeholder="'value '+(index+1)"
+                :name="'value'+index"
+                :value="param.value"
+                @change="$store.commit('setValueParams', { index, value: $event.target.value })"
+              />
             </li>
             <div>
               <li>
@@ -614,7 +620,6 @@ export default {
   },
   data () {
     return {
-      label: "",
       showModal: false,
       showPreRequestScript: false,
       copyButton: '<i class="material-icons">file_copy</i>',
@@ -763,6 +768,71 @@ export default {
     }
   },
   computed: {
+    url: {
+        get() { return this.$store.state.request.url; },
+        set(value) { this.$store.commit('setState', { value, 'attribute': 'url' }) },
+      },
+    method: {
+      get() { return this.$store.state.request.method; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'method' }) },
+    },
+    path: {
+      get() { return this.$store.state.request.path; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'path' }) },
+    },
+    label: {
+      get() { return this.$store.state.request.label; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'label' }) },
+    },
+    auth: {
+      get() { return this.$store.state.request.auth; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'auth' }) },
+    },
+    httpUser: {
+      get() { return this.$store.state.request.httpUser; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'httpUser' }) },
+    },
+    httpPassword: {
+      get() { return this.$store.state.request.httpPassword; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'httpPassword' }) },
+    },
+    bearerToken: {
+      get() { return this.$store.state.request.bearerToken; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'bearerToken' }) },
+    },
+    headers: {
+      get() { return this.$store.state.request.headers; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'headers' }) },
+    },
+    params: {
+      get() { return this.$store.state.request.params; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'params' }) },
+    },
+    bodyParams: {
+      get() { return this.$store.state.request.bodyParams; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'bodyParams' }) },
+    },
+    rawParams: {
+      get() { return this.$store.state.request.rawParams; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'rawParams' }) },
+    },
+    rawInput: {
+      get() { return this.$store.state.request.rawInput; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'rawInput' }) },
+    },
+    requestType: {
+      get() { return this.$store.state.request.requestType; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'requestType' }) },
+    },
+    contentType: {
+      get() { return this.$store.state.request.contentType; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'contentType' }) },
+    },
+    passwordFieldType: {
+      get() { return this.$store.state.request.passwordFieldType; },
+      set(value) { this.$store.commit('setState', { value, 'attribute': 'passwordFieldType' }) }
+    },
+
     selectedRequest() {
       return this.$store.state.postwoman.selectedRequest;
     },
@@ -896,31 +966,21 @@ export default {
         requestString.push('  method: "' + this.method + '",\n');
         if (this.auth === "Basic") {
           var basic = this.httpUser + ":" + this.httpPassword;
-          headers.push(
-            '    "Authorization": "Basic ' +
-              window.btoa(unescape(encodeURIComponent(basic))) +
-              ",\n"
-          );
+          this.$store.commit('addHeaders', '    "Authorization": "Basic ' + window.btoa(unescape(encodeURIComponent(basic))) + ",\n")
         } else if (this.auth === "Bearer Token") {
-          headers.push(
-            '    "Authorization": "Bearer Token ' + this.bearerToken + ",\n"
-          );
+          this.$store.commit('addHeaders', '    "Authorization": "Bearer Token ' + this.bearerToken + ",\n")
         }
         if (["POST", "PUT", "PATCH"].includes(this.method)) {
           const requestBody = this.rawInput
             ? this.rawParams
             : this.rawRequestBody;
           requestString.push("  body: " + requestBody + ",\n");
-          headers.push('    "Content-Length": ' + requestBody.length + ",\n");
-          headers.push(
-            '    "Content-Type": "' + this.contentType + '; charset=utf-8",\n'
-          );
+          this.$store.commit('addHeaders', '    "Content-Length": ' + requestBody.length + ",\n")
+          this.$store.commit('addHeaders', '    "Content-Type": "' + this.contentType + '; charset=utf-8",\n')
         }
         if (this.headers) {
           this.headers.forEach(function(element) {
-            headers.push(
-              '    "' + element.key + '": "' + element.value + '",\n'
-            );
+            this.$store.commit('addHeaders', '    "' + element.key + '": "' + element.value + '",\n')
           });
         }
         headers = headers.join("").slice(0, -3);
@@ -1189,40 +1249,34 @@ export default {
       this.params = params;
     },
     addRequestHeader() {
-      this.headers.push({
+      this.$store.commit('addHeaders', {
         key: "",
         value: ""
       });
       return false;
     },
     removeRequestHeader(index) {
-      this.headers.splice(index, 1);
+      this.$store.commit('removeHeaders', index)
       this.$toast.error("Deleted", {
         icon: "delete"
       });
     },
     addRequestParam() {
-      this.params.push({
-        key: "",
-        value: ""
-      });
+      this.$store.commit('addParams', { key: "", value: "" })
       return false;
     },
     removeRequestParam(index) {
-      this.params.splice(index, 1);
+      this.$store.commit('removeParams', index)
       this.$toast.error("Deleted", {
         icon: "delete"
       });
     },
     addRequestBodyParam() {
-      this.bodyParams.push({
-        key: "",
-        value: ""
-      });
+      this.$store.commit('addBodyParams', { key: "", value: "" })
       return false;
     },
     removeRequestBodyParam(index) {
-      this.bodyParams.splice(index, 1);
+      this.$store.commit('removeBodyParams', index)
       this.$toast.error("Deleted", {
         icon: "delete"
       });
@@ -1434,10 +1488,7 @@ export default {
         this.path = "";
         this.headers = [];
         for (const key of Object.keys(parsedCurl.headers)) {
-          this.headers.push({
-            key: key,
-            value: parsedCurl.headers[key]
-          });
+          this.$store.commit('addHeaders', { key: key, value: parsedCurl.headers[key] })
         }
         this.method = parsedCurl.method.toUpperCase();
         if (parsedCurl["data"]) {
@@ -1528,6 +1579,10 @@ export default {
     setExclude (excludedField, excluded) {
         this.urlExcludes[excludedField] = excluded;
         this.setRouteQueryState();
+    },
+    methodChange() {
+      // this.$store.commit('setState', { 'value': ["POST", "PUT", "PATCH"].includes(this.method) ? 'application/json' : '', 'attribute': 'contentType' })
+      this.contentType = ["POST", "PUT", "PATCH"].includes(this.method) ? 'application/json' : '';
     }
   },
   mounted() {
